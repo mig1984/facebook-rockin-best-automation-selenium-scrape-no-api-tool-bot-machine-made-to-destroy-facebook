@@ -37,12 +37,9 @@ Browser's window is expected to be 1000 pixels width and at least 1000 pixels he
 
 Because the bot is searching for texts, language is important. English (US) and Czech are supported. 
 
-
-## Installation step by step
-
 1. install ruby
 
-It may be already installed, just type "ruby -v" to check the version.
+  (it may be already installed, just type "ruby -v" to check the version)
 
 2. install chromium/chrome
 
@@ -63,7 +60,7 @@ $  cd facebook-rockin-best-automation-selenium-scrape-no-api-tool-bot-machine-ma
 ```
 
 
-## Howto
+## Step by step howto
 
 1. The `fb.rb` is the library and `bot.rb` is the robot. It is a working example. You may wish to change it completely. Still, you have to edit the `bot.rb` because there are lots of hardcoded things.
 
@@ -97,7 +94,7 @@ D, [2021-02-27T14:59:45.377527 #28190] DEBUG -- : loading anchors...
 => ["aaaa", "bbbbb", "ccccc", "dddd", ....... ]
 ```
 
-If this works, everything else will probably work.
+If this works, everything else will work probably.
 
 A file firends.yaml should appear in the current directory. It works as a cache. Delete the file to force an update next time.
 
@@ -114,7 +111,7 @@ D, [2021-02-27T15:01:40.716863 #28190] DEBUG -- : scroll_to: 1495
 => [#<struct FB::FeedUnit el=#<Selenium::WebDriver::Element:0x72d240308599784e id="adc8a930-ddf7-4cfc-a72f-b07b891a56cb">, type=:normal, ident="9439123d2ff06357ac7aa7654d77b4ac", header="Michal SperlingMichal Sperling">, #<struct FB::FeedUnit el=#<Selenium::WebDriver::Element:0x609931b4682c7d8a id="d4d29503-9605-4387-b12f-160a72fdb492">, type=:sponsored, ident="66d9a73154e00bd28adee7ce274339c2", header="Alza.cz Alza.cz Sponsored\n  ·Sponsored\n  ·">]
 ```
 
-7. Like the first post (fu; feed unit).
+7. Like the first post (the `fu` means feed unit).
 
 ```irb
 irb(main):005:0> fu = posts.first
@@ -212,9 +209,7 @@ fu = posts.first  # fu means feed unit
 button = elmw ".//div[@aria-label='#{COMMENTS_BUTTON_LABEL}']", fu.el
 ```
 
-Easy.
-
-If you want to modify the FB instance on-the-fly, ruby allows this. Just re-define a method on the commandline:
+4. If you want to modify the FB instance on-the-fly, ruby allows this easily. Just re-define a method on the irb commandline:
 
 ```irb
 irb(#<FB:0x0000563e6d41d578>):016:1* class FB
@@ -227,7 +222,8 @@ irb(#<FB:0x0000563e6d41d578>):020:0> end
 
 Adding new methods to an existing instance works the same way.
 
-When you are done, don't forget to modify the file :-)
+5. When you are done, don't forget to modify the file :-)
 
 
-Enjoy!
+## Enjoy!
+
