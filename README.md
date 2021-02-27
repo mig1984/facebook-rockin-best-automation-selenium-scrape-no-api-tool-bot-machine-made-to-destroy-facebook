@@ -1,0 +1,2 @@
+# facebook-rockin-best-automation-selenium-scrape-no-api-tool-bot-machine-made-to-destroy-facebook
+Facebook automation: login, like, share, comment, post, delete. Video "in action" is included. The purpose is primarily to destroy the Fakebook platform by filling it with trashy content (or to commit a virtual suicide in there, when you decided to leave all these fcking platforms, for instance). Please install, test and commit your own improvements and features! Thank you!
