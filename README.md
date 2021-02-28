@@ -149,7 +149,7 @@ D, [2021-02-27T15:11:12.249579 #28190] DEBUG -- : - on my own timeline
 10. Get number of shares of the post.
 
 ```irb
-irb(main):006:0> fb.shares fu
+irb(main):006:0> fb.number_of_shares fu
 => 5
 ```
 
