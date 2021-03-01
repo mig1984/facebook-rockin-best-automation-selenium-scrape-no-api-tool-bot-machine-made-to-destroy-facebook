@@ -28,14 +28,15 @@ module SetEN_US
   LIKE_BUTTON_WOW_LABEL   = 'Wow'
   LIKE_BUTTON_SAD_LABEL   = 'Sad'
   LIKE_BUTTON_ANGRY_LABEL = 'Angry'
-  
+
   LIKES_LABEL = 'See who reacted to this'
   LIKES_OTHERS_REGEX = /and \d+ more/
-  
+
   COMMENTS_BUTTON_LABEL = 'Leave a comment'
   COMMENTS_INPUT_LABEL = 'Write a comment'
-  
+
   SHARE_BUTTON_LABEL = 'Send this to friends or post it on your timeline.'
   SHARE_OWN = 'Share now (Custom)'
+  SHARE_PUBLIC = 'Share now (Public)'  # TODO: prove it works
 
 end

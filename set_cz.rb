@@ -34,9 +34,10 @@ module SetCZ
     
   COMMENTS_BUTTON_LABEL = 'Zanechte vzkaz'
   COMMENTS_INPUT_LABEL = 'Napište komentář'
-  
+
   SHARE_BUTTON_LABEL = 'Pošlete to přátelům nebo to zveřejněte na své Timeline.'
   SHARE_OWN = 'Sdílet (Vlastní)'
+  SHARE_PUBLIC = 'Sdílet (Veřejný)'
 
 end
 

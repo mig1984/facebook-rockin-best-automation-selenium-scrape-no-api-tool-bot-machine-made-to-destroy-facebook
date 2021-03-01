@@ -413,7 +413,7 @@ class FB
     $log.debug "- on my own timeline"
     sleep 1.5
     begin
-      option = elmw("//*[contains(text(), '#{SHARE_OWN}')]") # popup
+      option = elmw("//*[contains(text(), '#{SHARE_OWN}') or contains(text(), '#{SHARE_PUBLIC}')]") # popup
     rescue
       $log.error "no sharing options found"
       return false
