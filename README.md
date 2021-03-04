@@ -191,9 +191,9 @@ It is not necessary, but it will start inherited console on error instead of con
 button = elmw ".//div[@aria-label='#{COMMENTS_BUTTON_LABEL}']", fu.el
 ```
 
-Mabye there is a problem. So try the debug the line on the console.
+Mabye there is a problem. So try to debug the line on the console.
 
-```ruby
+```irb
 irb(#<FB:0x0000563e6d41d578>):014: posts = timeline(2)  # get up to two posts
 irb(#<FB:0x0000563e6d41d578>):015: fu = posts.first     # fu means feed unit
 irb(#<FB:0x0000563e6d41d578>):016: button = elmw ".//div[@aria-label='#{COMMENTS_BUTTON_LABEL}']", fu.el   # fu.el is the selenium's element
