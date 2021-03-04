@@ -175,13 +175,13 @@ $ HEADLESS=1 ruby bot.rb
 
 ## Debugging and adding features
 
-1. Start the bot with the environment variable DEVELOPMENT set. In the shell, type:
+1. Start the debug.rb with the environment variable DEVELOPMENT set. In the shell, type:
 
 ```bash
-$ DEVELOPMENT=1 ruby bot.rb
+$ DEVELOPMENT=1 ruby debug.rb
 ```
 
-It is not necessary, but on error, inherited console will appear and you will be able to resolve it better.
+It is not necessary, but it will start inherited console on error instead of continuing.
 
 2. A console and a browser window should appear.
 
@@ -194,9 +194,9 @@ button = elmw ".//div[@aria-label='#{COMMENTS_BUTTON_LABEL}']", fu.el
 Mabye there is a problem. So try the debug the line on the console.
 
 ```ruby
-posts = timeline(2)  # get up to two posts
-fu = posts.first     # fu means feed unit
-button = elmw ".//div[@aria-label='#{COMMENTS_BUTTON_LABEL}']", fu.el   # fu.el is the selenium's element
+irb(#<FB:0x0000563e6d41d578>):014: posts = timeline(2)  # get up to two posts
+irb(#<FB:0x0000563e6d41d578>):015: fu = posts.first     # fu means feed unit
+irb(#<FB:0x0000563e6d41d578>):016: button = elmw ".//div[@aria-label='#{COMMENTS_BUTTON_LABEL}']", fu.el   # fu.el is the selenium's element
 ```
 
 4. If you want to modify the FB instance on-the-fly, ruby allows this. Just re-define a method:
