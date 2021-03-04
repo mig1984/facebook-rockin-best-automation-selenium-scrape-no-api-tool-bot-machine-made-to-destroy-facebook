@@ -1,0 +1,23 @@
+0.1.0
+=====
+- the file 'bot.rb' has been splitted:
+  - settings.rb (should not change often)
+  - debug.rb (run to debug FB instance)
+  - bot.rb (run to do autolike/autocomment/autoshare)
+  - suicide.rb (run to delete all your posts)
+- set_*.rb files have been renamed to lang_*.rb (also inside these files; SetCZ=>LangCZ, SetEN_US=>LangEN_US)
+- go_home() replaced by navigate_to(homepage_url)
+- timeline() can now load both the homepage and the profile timeline
+- timeline() does not navigate to homepage automatically, it expects the page to be already loaded before (homepage or a profile)
+- timeline() does not raise "no more posts" exception, but returns normally - empty array
+
+How to migrate from the previous version:
+
+- make a backup
+- get fresh files (git pull && git reset --hard)
+- update settings.rb from the backup
+- update bot.rb from the backup; the logic has not changed, but you have to explicitly call "fb.navigate_to fb.homepage_url" before calling the fb.timealine(60) now
+
+0.0.1
+=====
+- initial version

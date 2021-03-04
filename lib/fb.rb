@@ -15,7 +15,7 @@ class FB
     @opts = opts
 
     # extend this class by language dependent constants
-    self.class.include opt :set
+    self.class.include opt :language_module
 
     if opts[:headless]
       options = Selenium::WebDriver::Chrome::Options.new args: ["headless", "window-size=1000x1200", "user-data-dir=#{opt :user_data_dir}"]
@@ -29,6 +29,7 @@ class FB
     $log.debug "chromium started"
 
     @wait = Selenium::WebDriver::Wait.new timeout: 10 # seconds
+    @timeline_already = []
   end
 
   def done
@@ -40,14 +41,38 @@ class FB
     @opts[o]
   end
   
+  # check if the selenium's element is still attached by the browser
+  def attached? el
+    begin
+      el.tag_name
+    rescue Selenium::WebDriver::Error::StaleElementReferenceError
+      false
+    else
+      true
+    end
+  end
   
   # navigation...
-  
-  def go_home
-    $log.debug "loading homepage"
-    @driver.navigate.to('https://www.facebook.com')
-  end
 
+  def homepage_url
+    "https://www.facebook.com/"
+  end
+  
+  def my_profile_url
+    "https://www.facebook.com/#{opt :profile_path}"
+  end
+  
+  def friends_url
+    "https://www.facebook.com/#{opt :profile_path}/friends"
+  end
+  
+  def navigate_to url, force=false
+    $log.debug "navigate_to: #{url}"
+    if @driver.current_url != url || force
+      @driver.navigate.to url
+    end
+  end
+  
   
   # login...
   
@@ -55,7 +80,7 @@ class FB
   # it worked for me, but I don't use it anymore, so it's not tested
   def login(username, password)
     $log.info "login..."
-    go_home
+    navigate_to homepage_url
     $log.debug "accepting cookies"
     el = elmw "//button[contains(text(), '#{LOGIN_ACCEPT_ALL}')]"
     sleep 1
@@ -79,8 +104,9 @@ class FB
     cache_in_file('friends.yaml') do
     
       $log.info "loading friends..."
+
+      navigate_to friends_url
       
-      @driver.navigate.to("https://www.facebook.com/#{opt :profile_path}/friends")
       friends = []
 
       loop do
@@ -115,139 +141,212 @@ class FB
   end
   
 
-  # traverse the timeline until max feed units found
+
+  # traverse the normal/profile timeline until max feed units found
   # scrolls to the bottom unless no more units automatically
   # continues scrolling on error, refreshes the page and starts again on exception
+  #
+  # expects the current url to be homepage or a profile
+  # (something with the timeline)
   #
   # if a block given, each feed unit is passed into it while traversing
   #
   def timeline(max, &block)
-    @timeline_already ||= []
     min_y = 0
     posts = []
     scrolled = false
 
-    go_home
-    
-    $log.info "traversing the timeline..."
-
-    loop do
-      found = 0
-
-      # for each feed unit....
-      elmsw("//div[contains(@data-pagelet, 'FeedUnit')]").each do |el|
-
-        # don't try to go backward
-        y = el.attribute('offsetTop').to_i
-        next if y <= min_y
-        min_y = y
-
-        # get first 0..8 spans and identify the feed unit
-        header = ''
-        type = :normal
-        elms('.//span', el)[0..8].each do |span|
-          next if span.text =~ TIMELINE_DYNAMIC_SPAN_REGEX  # skip what changes frequently (date, etc.)
-          return if span.text =~ TIMELINE_NO_MORE_POSTS_REGEX
-
-          case span.text
-            when TIMELINE_SUGGESTED_FOR_YOU_REGEX
-              type = :suggested_for_you
-            when TIMELINE_SUGGESTED_GROUP_REGEX
-              type = :suggested_group
-            when TIMELINE_PEOPLE_YOU_MAY_KNOW_REGEX
-              type = :people_you_may_know
-            when TIMELINE_SPONSORED_REGEX
-              type = :sponsored
-          end
-
-          header << span.text
-        end
-        ident = Digest::MD5.hexdigest(header)  # compute an unique ident of the feed unit
-        
-        if !@timeline_already.index(ident)
-
-          # create the FeedUnit object
-          fu = FeedUnit.new(el, type, ident, header)        
-
-          $log.info "feed unit: ident=#{ident}, type=#{type}"
-
-          found += 1
-          @timeline_already << ident
-          posts << fu
-
-          scroll_to el.attribute('offsetTop').to_i + rand(300)
-          sleep 2 # scrolling might be slow          
-
-          if block
-
-            # move mouse to the homepage button, otherwise it hovers random elements and tooltips
-            move_to elmw("//a[contains(@aria-label, '#{HOMEPAGE_LABEL}')]")
-            
-            begin
-              
-              block.call fu
-              
-            rescue Selenium::WebDriver::Error::JavascriptError, 
-                   Selenium::WebDriver::Error::StaleElementReferenceError, 
-                   Selenium::WebDriver::Error::TimeoutError, 
-                   StandardError
-              $log.error "TIMELINE ERROR: #{$!}"
-              $log.debug $!.backtrace
-              if opt :development
-                binding.irb 
-              end
-              # go on to a next post...
-            rescue Interrupt # CTRL-C
-              raise
-            rescue Exception
-              $log.fatal "TIMELINE EXCEPTION: #{$!}"
-              $log.debug $!.backtrace
-              if opt :development
-                binding.irb
-              else
-                raise
-              end
-            end
-
-            # pretend reading
-            case type
-              when :normal
-                sleep(rand(8))
-              when :sponsored
-              else
-                sleep(rand(3))
-            end
-
-          end
-
-          return posts if posts.length==max
-
-        end # each feed unit
-    
-      end # loop
-      
-      if found == 0  # nothing new found?
-        if ! scrolled
-          scroll_to_bottom
-          scrolled = true
-          sleep 4
-        else
-          raise 'no more new posts'
-        end
+    timeline_type = case @driver.current_url
+      when homepage_url
+        :homepage
+      when my_profile_url
+        :profile
       else
-        scrolled = false
-      end
-      
-    end # loop
+        raise "Can't detect a type of the current page '#{@driver.current_url}'. Go to homepage or a profile page before calling the timeline(). (Use 'navigate_to homepage_url' or 'navigate_to my_profile_url' before)."
+    end
+
+    units_path = case timeline_type
+      when :homepage
+        "//div[contains(@data-pagelet, 'FeedUnit')]"
+      when :profile
+        "//div[contains(@data-pagelet, 'ProfileTimeline')]/div"
+    end
+
+    $log.info "traversing the #{timeline_type} timeline..."
+
+    catch :we_are_done do
+
+      loop do
+        found = 0
+  
+        retry_count = 0
+        begin # rescue stale reference error
+        
+          # for each feed unit...
+          elmsw(units_path).each do |el|
+
+            # get first 0..8 spans and identify the feed unit
+            header = ''
+            type = :normal
+            elms('.//span', el)[0..8].each do |span|   # are lazy loaded! we have to wait
+              next if span.text =~ TIMELINE_DYNAMIC_SPAN_REGEX  # skip what changes frequently (date, etc.)
+              throw :we_are_done if span.text =~ TIMELINE_NO_MORE_POSTS_REGEX
+
+              if timeline_type == :homepage
+
+                case span.text
+                  when TIMELINE_SUGGESTED_FOR_YOU_REGEX
+                    type = :suggested_for_you
+                  when TIMELINE_SUGGESTED_GROUP_REGEX
+                    type = :suggested_group
+                  when TIMELINE_PEOPLE_YOU_MAY_KNOW_REGEX
+                    type = :people_you_may_know
+                  when TIMELINE_SPONSORED_REGEX
+                    type = :sponsored
+                end
+
+              elsif timeline_type == :profile
+
+                # there are no such types on the profile timeline => everything becomes :normal
+
+              end
+
+              header << span.text
+            end
+            
+            # contains concatenated 8 first spans (but not changing ones)
+            header.strip!
+            
+            # get concatenated sources of all images
+            images = elms('.//img', el).inject('') {|s, x| s << x.attribute('src') }              
+            
+            # compute an unique ident of the feed unit
+            ident = Digest::MD5.hexdigest(header + images)
+            
+            # get the Y position of the element
+            y = el.attribute('offsetTop').to_i
+
+            # process the element unless already; don't try to go backward
+            if !@timeline_already.index(ident) && y > min_y  
+
+              $log.info "feed unit: ident=#{ident}, type=#{type}, y=#{y}"
+              
+              found += 1
+
+              # create the FeedUnit object
+              fu = FeedUnit.new(el, type, ident, header)
+              posts << fu
+
+              scroll_to el.attribute('offsetTop').to_i
+              sleep 2 # scrolling might be slow
+
+              if block
+
+                # move mouse to the homepage button, otherwise it hovers random elements and tooltips
+                move_to elmw("//a[contains(@aria-label, '#{HOMEPAGE_LABEL}')]")
+
+                begin
+
+                  block.call fu
+
+                rescue Selenium::WebDriver::Error::JavascriptError, 
+                      Selenium::WebDriver::Error::StaleElementReferenceError, 
+                      Selenium::WebDriver::Error::TimeoutError, 
+                      StandardError
+                  $log.error "TIMELINE ERROR: #{$!}"
+                  $log.debug $!.backtrace
+                  if opt :development
+                    binding.irb
+                  end
+                  # go on to a next post...
+                rescue Interrupt # CTRL-C
+                  raise
+                rescue Exception
+                  $log.fatal "TIMELINE EXCEPTION: #{$!}"
+                  $log.debug $!.backtrace
+                  if opt :development
+                    binding.irb
+                  else
+                    raise
+                  end
+                end
+
+              end # block
+              
+              min_y = y if attached? el  # when post is deleted, element is not attached (disappeared) => do not update the position
+              
+              @timeline_already << ident # next time it will skip
+
+              throw :we_are_done if posts.length==max
+
+            end # already
+
+          end # each feed unit
+          
+        rescue Selenium::WebDriver::Error::StaleElementReferenceError  
+          
+          # divs in the profile timeline are lazy loaded. In the beginning, elmsw gets 8 divs. When you scroll down, some of these divs 
+          # are being replaced with the lazy loaded contents -> therefore the original div is gone and it's reference as well
+          # -> we have to restart the elmsw
+          retry_count += 1
+          if retry_count<=2
+            retry
+          else
+            raise "retried, but still getting stale reference error"
+          end
+          
+        else
+          
+          retry_count = 0
+          
+        end
+
+        if found == 0 # nothing new found?
+          if ! scrolled
+            scroll_to_bottom
+            scrolled = true
+            sleep 4
+          else
+            $log.info 'no more new posts'
+            throw :we_are_done
+          end
+        else
+          scrolled = false
+        end
+
+      end # loop
     
+    end # catch we_are_done
+
     posts
   end
-    
+  
   
   # checks...
-  
+    
   def is_my_own? fu
     fu.header =~ /#{opt :my_name}/
+  end
+    
+    
+  # deletion
+  
+  def delete fu
+    $log.info "delete..."
+    button = elmw(".//div[contains(@aria-label, '#{DELETE_ACTIONS}')]", fu.el)
+    button.click
+    sleep 2
+    #elmw("//div[@role='menu']")  # wait for menu
+    item = elmw("//div[@role='menu']//span[contains(text(), '#{DELETE_TRASH}') or contains(text(), '#{DELETE_REMOVE_TAG}') or contains(text(), '#{DELETE_HIDE}')]")
+    txt = item.text # (the element will disappear after clicking)
+    item.click
+    if txt =~ /#{DELETE_TRASH}/
+      sleep 2
+      button = elmw("//div[@role='dialog']//span[text()='#{DELETE_CONFIRM}']")
+      button.click
+    end
+    sleep 2 # it has to disappear from the timeline
+    $log.debug "deleted."
   end
   
   
@@ -498,6 +597,7 @@ class FB
   # use this to start an irb console inside an instance of this class
   # it's called 'debug' because irb adds some methods when started and one of them is called 'irb', so next time if you call the method, it would work differently!
   def debug
+    require 'irb'
     binding.irb
   end
   

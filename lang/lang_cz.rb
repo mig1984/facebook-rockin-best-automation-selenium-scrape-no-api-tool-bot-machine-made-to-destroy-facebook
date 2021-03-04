@@ -1,4 +1,4 @@
-module SetCZ
+module LangCZ
   
   # this module will be included into the FB class on it's initialize
 
@@ -34,10 +34,15 @@ module SetCZ
     
   COMMENTS_BUTTON_LABEL = 'Zanechte vzkaz'
   COMMENTS_INPUT_LABEL = 'Napište komentář'
-
+  
   SHARE_BUTTON_LABEL = 'Pošlete to přátelům nebo to zveřejněte na své Timeline.'
   SHARE_OWN = 'Sdílet (Vlastní)'
-  SHARE_PUBLIC = 'Sdílet (Veřejný)'
 
+  DELETE_ACTIONS = 'Akce k tomuto příspěvku'
+  DELETE_TRASH = 'Přesunout do koše'
+  DELETE_REMOVE_TAG = 'Odebrat označení'
+  DELETE_HIDE = 'Skrýt v profilu'
+  DELETE_CONFIRM = 'Přesunout'
+  
 end
 

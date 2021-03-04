@@ -1,30 +1,24 @@
 #!/usr/bin/env ruby
 
-# uncomment the $DEBUG global variable to see some more messages from the selenium driver
-#  $DEBUG = true
+# Run me to do autolike/autocomment/autoshare.
+#
+# $ ruby bot.rb
+#
 
-DEVELOPMENT   = ENV.has_key?('DEVELOPMENT')
-HEADLESS      = ENV.has_key?('HEADLESS')
-DO_SHARING    = true
-DO_COMMENTING = false
+require_relative 'settings'
 
-ARGV.clear
-
-#############
-
-# This method does the job. Change it as you like!
-
+# this method does the job
 def process_timeline(fb)
   
   # preload and cache friends
-  fb.friends 
+  fb.friends
 
-  # some regular expressions to identify a post and if it should be liked/shared/commented
-  regex_friends = /#{ fb.friends.join('|') }|Stará Praha/
-  regex_do_not_like = /XTV|Bytujeme/
-  regex_do_not_share = /XTV|Bytujeme|profilový obrázek|Valento|Šlachta/
-  regex_do_not_comment = /Jindřich Parma|Janek Ruzicka|Sudety|Sičakova|Bouffie|Juki/
+  # create regular expression matching all my friends
+  regex_friends = /#{ fb.friends.join('|') }/
   
+  # go to homepage
+  fb.navigate_to fb.homepage_url
+
   # traverse up to 60 feed units
   fb.timeline(60) do |fu|
 
@@ -35,7 +29,7 @@ def process_timeline(fb)
       next 
     end
 
-    # like 
+    # do like
     
     liked_now = false
     
@@ -44,7 +38,7 @@ def process_timeline(fb)
         $log.debug "- is a friend"
         # like everything from my friends
         liked_now = fb.like(fu) unless fb.liked_already? fu
-      elsif rand(2)==0 && fu.el.text !~ regex_do_not_like
+      elsif rand(2)==0 && fu.el.text !~ REGEX_DO_NOT_LIKE
         $log.debug "- is not a friend"
         # there must be at least 4 likes already
         liked_now = fb.like(fu, 4) unless fb.liked_already? fu
@@ -60,7 +54,7 @@ def process_timeline(fb)
 
       if DO_SHARING
       
-        if fu.type==:normal && fu.header !~ regex_do_not_share && fu.header =~ regex_friends
+        if fu.type==:normal && fu.header !~ REGEX_DO_NOT_SHARE && fu.header =~ regex_friends
           fb.share fu
           sleep rand(2)
         end
@@ -69,63 +63,37 @@ def process_timeline(fb)
 
       if DO_COMMENTING
 
-        if fu.el.text !~ regex_do_not_comment && (fu.type!=:sponsored || fb.number_of_comments(fu)>15) && (fu.type!=:suggested_for_you || fb.number_of_comments(fu)>20)
-          fb.comment(fu, "Revoluce!")
+        if fu.el.text !~ REGEX_DO_NOT_COMMENT && (fu.type!=:sponsored || fb.number_of_comments(fu)>15) && (fu.type!=:suggested_for_you || fb.number_of_comments(fu)>20)
+          fb.comment(fu, COMMENT_TEXT)
           sleep rand(2)
         end
 
       end
     
     end # liked
-      
+
+    # pretend reading
+    case fu.type
+      when :normal
+        sleep(rand(8))
+      when :sponsored
+      else
+        sleep(rand(3))
+    end
+
   end
 end
 
-#############
 
-require 'logger'
-$log = Logger.new(STDERR)
-
-# load a language module
-require_relative 'set_cz'                                  # or set_en_us.rb
-
-# modify this...
-require_relative 'fb'
-fb = FB.new set: SetCZ,                                    # or SetEN_US - see the module name in the corresponding file
-            development: DEVELOPMENT,
-            headless: HEADLESS,
-            user_data_dir: "/home/web/fb/chrome-profile",  # absolute path to the browser's profile
-            my_name: 'Jan Molič',                          # displayed name
-            profile_path: 'molic.jan'                      # i.e. https://www.facebook.com/molic.jan
-
-#############
-
-if DEVELOPMENT
-  
-  require 'irb'
-  binding.irb
-  
-  # now on the console:
-  #
-  # a) type 'process_timeline(fb)' or
-  # b) fb.* to call a method on the fb instance, or
-  # c) fb.debug to start an inherited irb console in the context of the fb instance
-
-else
-
-  # main loop
-  # process up to 60 posts and then sleep 6-12 hours
-  
-  loop do
-    begin
-      process_timeline(fb)
-      sleep rand(3600*6)+3600*6
-    rescue Interrupt # CTRL-C
-      raise
-    rescue Exception
-      $log.error "EXCEPTION: #{$!} #{$!.backtrace}"
-      sleep 5
-    end
+# main loop
+loop do
+  begin
+    process_timeline(FB_INSTANCE)
+    sleep rand(3600*6)+3600*6
+  rescue Interrupt # CTRL-C
+    raise
+  rescue Exception
+    $log.error "EXCEPTION: #{$!} #{$!.backtrace}"
+    sleep 5
   end
-
 end
