@@ -24,6 +24,11 @@ planned:
   - post something
 
 
+## See it in action (video)
+
+[![in action](video.png)](https://peertube.1984.cz/w/kWXrRiXy5Zpe56Zshn32iE "In Action!")
+
+
 ## Prerequisities
 
 The library `lib/fb.rb` works with chromium/chrome only at the moment. Selenium supports Firefox as well, if you like, you can commit an improvement.
