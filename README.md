@@ -24,11 +24,6 @@ planned:
   - post something
 
 
-## See it in action (video)
-
-[![in action](video.png)](https://www.youtube.com/watch?v=hf0iS7koCPo "In Action!")
-
-
 ## Prerequisities
 
 The library `lib/fb.rb` works with chromium/chrome only at the moment. Selenium supports Firefox as well, if you like, you can commit an improvement.
